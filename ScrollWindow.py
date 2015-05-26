@@ -54,6 +54,12 @@ class ScrollWindow:
 		"""Draw row 'i' to 'self.win', even if already drawn. Used by growRender() but also directly if 'data[i]' has changed"""
 		self.drawFn(self.win, i, self.data[i])
 
+	def changeSelection(self, newValue):
+		if self.selection is None:
+			raise ValueError("Can't change selected data on an unselectable window")
+		self.data[self.selection] = newValue
+		self.forceRender(self.selection)
+
 	# When talking about "scrolling" vertically in a selectable window, it's actually moving the selection
 	# The window will scroll if the selection moves off the edge
 	# The methods take a 'literally' flag if you actually want to do scrolling, not just moving the selection

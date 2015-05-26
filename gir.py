@@ -25,12 +25,12 @@ def main(win, filename):
 	height, width = win.getmaxyx()
 
 	commands = {
-		'pick': color.white_blue,
-		'reword': color.black_yellow,
-		'edit': color.blue,
-		'squash': color.blue,
-		'fixup': color.blue,
-		'exec' : color.blue,
+		'pick': {'color': color.white, 'key': 'p'},
+		'reword': {'color': color.black_yellow, 'key': 'r'},
+		'edit': {'color': color.black_green, 'key': 'e'},
+		'squash': {'color': color.white_blue, 'key': 's'},
+		'fixup': {'color': color.white_magenta, 'key': 'f'},
+		'exec' : {'color': color.white_red, 'key': 'x'},
 	}
 
 	repo = git.Repo(filename)
@@ -60,7 +60,7 @@ def main(win, filename):
 
 	def commandDraw(win, row, data):
 		command, commit = data
-		clr = commands[command]
+		clr = commands[command]['color']
 		win.fillline(row, clr)
 		win.addstr(row, 2, commit.hexsha[:7], clr)
 		win.addstr(row, 11, command, color.bold(clr))
@@ -87,12 +87,12 @@ def main(win, filename):
 		detailWin.draw()
 		if commandWin.canScrollUp(literally = True):
 			command, commit = commandWin.getFirstData()
-			win.addch(1, 1, curses.ACS_UARROW, commands[command])
+			win.addch(1, 1, curses.ACS_UARROW, commands[command]['color'])
 		if commandWin.canScrollDown(literally = True):
 			command, commit = commandWin.getLastData()
-			win.addch(commandWin.targetHeight, 1, curses.ACS_DARROW, commands[command])
+			win.addch(commandWin.targetHeight, 1, curses.ACS_DARROW, commands[command]['color'])
 		command, commit = commandWin.getSelectedData()
-		win.addch(commandWin.selection - commandWin.curRow + 1, 1, curses.ACS_RARROW, commands[command])
+		win.addch(commandWin.selection - commandWin.curRow + 1, 1, curses.ACS_RARROW, commands[command]['color'])
 
 		# Keypress
 		c = win.getch()
@@ -129,6 +129,12 @@ def main(win, filename):
 				focusedWin.scrollUp(focusedWin.height)
 		elif c == curses.KEY_END and focusedWin.canScrollDown():
 			focusedWin.scrollDown(focusedWin.height)
+		elif c in (ord(command['key']) for command in commands.values()):
+			for name, command in commands.iteritems():
+				if c == ord(command['key']):
+					command, commit = commandWin.getSelectedData()
+					commandWin.changeSelection((name, commit))
+					break
 
 if len(sys.argv) != 2:
 	print "Expected a single filename"
