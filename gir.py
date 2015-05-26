@@ -96,28 +96,32 @@ def main(win, filename):
 
 		# Keypress
 		c = win.getch()
-		if c == curses.KEY_UP and focusedWin.canScrollUp():
+		if c in (curses.KEY_UP, ord('k')) and focusedWin.canScrollUp():
 			focusedWin.scrollUp()
-		elif c == curses.KEY_DOWN and focusedWin.canScrollDown():
+		elif c in (curses.KEY_DOWN, ord('j')) and focusedWin.canScrollDown():
 			focusedWin.scrollDown()
-		elif c == curses.KEY_LEFT and focusedWin.canScrollLeft():
+		elif c in (curses.KEY_LEFT, ord('h')) and focusedWin.canScrollLeft():
 			focusedWin.scrollLeft()
-		elif c == curses.KEY_RIGHT and focusedWin.canScrollRight():
+		elif c in (curses.KEY_RIGHT, ord('l')) and focusedWin.canScrollRight():
 			focusedWin.scrollRight()
 		elif c == 336: # Shift+Up
 			focusedWin = commandWin
 		elif c == 337: # Shift+Down
 			focusedWin = detailWin
-		elif c == curses.KEY_PPAGE:
+		elif c in (curses.KEY_PPAGE, ord('K')):
 			if focusedWin.canScrollUp(True):
 				focusedWin.scrollUp(focusedWin.targetHeight, True)
 			elif focusedWin.canScrollUp():
 				focusedWin.scrollUp(focusedWin.targetHeight)
-		elif c == curses.KEY_NPAGE:
+		elif c in (curses.KEY_NPAGE, ord('J')):
 			if focusedWin.canScrollDown(True):
 				focusedWin.scrollDown(focusedWin.targetHeight, True)
 			elif focusedWin.canScrollDown():
 				focusedWin.scrollDown(focusedWin.targetHeight)
+		elif c == ord('H') and focusedWin.canScrollLeft():
+			focusedWin.scrollLeft(focusedWin.targetWidth)
+		elif c == ord('L') and focusedWin.canScrollRight():
+			focusedWin.scrollRight(focusedWin.targetWidth)
 		elif c == curses.KEY_HOME:
 			if focusedWin.canScrollLeft():
 				focusedWin.scrollLeft(focusedWin.width)
