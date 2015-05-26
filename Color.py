@@ -28,6 +28,8 @@ class Color:
 		if flags: # Recursively get the no-attribute version so it will be the one cached with an index
 			return getattr(self, name) | flags
 		else: # This request has no attributes; assign it an index
+			if name in ('grey', 'gray'): # Special case
+				return self.black_black_bold
 			parts = name.split('_', 1)
 			fg = Color.resolveName(parts[0])
 			bg = Color.resolveName(parts[1] if len(parts) > 1 else 'black') # Supposedly -1 means terminal default, but it doesn't work for me
@@ -37,12 +39,12 @@ class Color:
 			finally:
 				self.ctr += 1
 
-	def bold(self, c): return c | curses.A_BOLD
-	def bd(self, c): return c | curses.A_BOLD
-	def reverse(self, c): return c | curses.A_REVERSE
-	def rv(self, c): return c | curses.A_REVERSE
-	def underline(self, c): return c | curses.A_UNDERLINE
-	def ul(self, c): return c | curses.A_UNDERLINE
+	def bold(self, c = 0): return c | curses.A_BOLD
+	def bd(self, c = 0): return c | curses.A_BOLD
+	def reverse(self, c = 0): return c | curses.A_REVERSE
+	def rv(self, c = 0): return c | curses.A_REVERSE
+	def underline(self, c = 0): return c | curses.A_UNDERLINE
+	def ul(self, c = 0): return c | curses.A_UNDERLINE
 
 	@staticmethod
 	def resolveName(name):
