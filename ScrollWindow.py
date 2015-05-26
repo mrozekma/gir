@@ -21,9 +21,8 @@ class ScrollWindow:
 		if self.width < self.targetWidth:
 			self.targetWidth = self.width
 
-		self.win = WindowWrapper(curses.newpad(self.height, self.width))
-		self.win.addstr(0, 0, 'xxx')
-		self.win.addstr(1, 0, 'y')
+		# I can't figure out why height + 1 is necessary here; the pad is the right height without it, but writing the last line causes an ERR
+		self.win = WindowWrapper(curses.newpad(self.height + 1, self.width))
 		self.curRow = 0
 		self.curCol = 0
 		self.rendered = -1 # All rows through this one have been drawn to self.win
@@ -65,26 +64,44 @@ class ScrollWindow:
 		else:
 			return self.selection > 0
 
+	def scrollUp(self, amt = 1, literally = False):
+		if self.selection is None or literally: # Normal windows
+			if self.curRow > 0:
+				self.curRow = max(0, self.curRow - amt)
+			if self.selection is not None and self.selection > self.curRow + self.targetHeight - 1:
+				self.selection = self.curRow + self.targetHeight - 1
+		elif self.selection > 0: # Selectable windows
+			self.selection = max(0, self.selection - amt)
+			if self.selection < self.curRow:
+				self.curRow = self.selection
+
 	def canScrollDown(self, literally = False):
 		if self.selection is None or literally:
 			return self.curRow + self.targetHeight < self.height
 		else:
 			return self.selection < self.height
 
-	def scrollUp(self):
-		if self.selection is None: # Normal windows
-			if self.curRow > 0:
-				self.curRow -= 1
-		elif self.selection > 0: # Selectable windows
-			self.selection -= 1
-			if self.selection < self.curRow:
-				self.curRow = self.selection
-
-	def scrollDown(self):
-		if self.selection is None: # Normal windows
-			if self.curRow + self.targetHeight - 1 < self.height:
-				self.curRow += 1
+	def scrollDown(self, amt = 1, literally = False):
+		if self.selection is None or literally: # Normal windows
+			if self.curRow + self.targetHeight < self.height:
+				self.curRow = min(self.height - self.targetHeight, self.curRow + amt)
+			if self.selection is not None and self.selection < self.curRow:
+				self.selection = self.curRow
 		elif self.selection + 1 < self.height: # Selectable windows
-			self.selection += 1
+			self.selection = min(self.height - 1, self.selection + amt)
 			if self.selection > self.curRow + self.targetHeight - 1:
 				self.curRow = self.selection - self.targetHeight + 1
+
+	def canScrollLeft(self):
+		return self.curCol > 0
+
+	def scrollLeft(self, amt = 1):
+		if self.curCol > 0:
+			self.curCol = max(0, self.curCol - amt)
+
+	def canScrollRight(self):
+		return self.curCol + self.targetWidth < self.width
+
+	def scrollRight(self, amt = 1):
+		if self.curCol + self.targetWidth < self.width:
+			self.curCol = min(self.width - self.targetWidth, self.curCol + amt)

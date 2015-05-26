@@ -33,11 +33,13 @@ class Color:
 			parts = name.split('_', 1)
 			fg = Color.resolveName(parts[0])
 			bg = Color.resolveName(parts[1] if len(parts) > 1 else 'black') # Supposedly -1 means terminal default, but it doesn't work for me
+			if self.ctr > curses.COLOR_PAIRS:
+				raise RuntimeError("Can't allocate more than %d colors" % curses.COLOR_PAIRS)
 			curses.init_pair(self.ctr, fg, bg)
-			try:
-				return curses.color_pair(self.ctr)
-			finally:
-				self.ctr += 1
+			rtn = curses.color_pair(self.ctr)
+			self.m[name] = rtn
+			self.ctr += 1
+			return rtn
 
 	def bold(self, c = 0): return c | curses.A_BOLD
 	def bd(self, c = 0): return c | curses.A_BOLD

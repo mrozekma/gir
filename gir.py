@@ -13,7 +13,7 @@ from WindowWrapper import WindowWrapper
 # Rebase 8440467..f559b2f onto 9ed5d48
 # Going to attach the commit *after* 8440467, through f559b2f, after 9ed5d48
 
-NUM_COMMITS = 20
+MAX_COMMITS = 20
 
 def title(str):
 	sys.__stdout__.write("\033]0;%s\007" % str)
@@ -68,19 +68,20 @@ def main(win, filename):
 	def commandLen(data):
 		command, commit = data
 		return 18 + len(commit.summary)
-	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, NUM_COMMITS, True)
+	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, min(len(commits), MAX_COMMITS), True)
 
 	def detailDraw(win, row, data):
 		win.addstr(row, 0, "Line %d" % row)
 	def detailLen(data):
 		return len("Line %d" % data)
-	detailWin = ScrollWindow(list(range(200)), detailDraw, detailLen, NUM_COMMITS + 4, 1, width - 2, height - NUM_COMMITS - 6)
+	detailWin = ScrollWindow(list(range(200)), detailDraw, detailLen, commandWin.targetHeight + 3, 1, width - 2, height - commandWin.targetHeight - 5)
 
+	focusedWin = commandWin
 	win.noutrefresh()
 	while True:
-		win.boundedBorder(0, 0, NUM_COMMITS + 1, width - 1, 'Commits')
+		win.boundedBorder(0, 0, commandWin.targetHeight + 1, width - 1, 'Commits', color.white if focusedWin == commandWin else color.grey)
 		command, commit = commandWin.getSelectedData()
-		win.boundedBorder(NUM_COMMITS + 3, 0, height - 2, width - 1, commit.hexsha, color.grey)
+		win.boundedBorder(commandWin.targetHeight + 2, 0, height - 2, width - 1, commit.hexsha, color.white if focusedWin == detailWin else color.grey)
 		win.refresh() # Draw now so stuff before the right edge doesn't get overwritten later
 		commandWin.draw()
 		detailWin.draw()
@@ -93,16 +94,37 @@ def main(win, filename):
 		command, commit = commandWin.getSelectedData()
 		win.addch(commandWin.selection - commandWin.curRow + 1, 1, curses.ACS_RARROW, commands[command])
 
+		# Keypress
 		c = win.getch()
-		print c
-		if c == curses.KEY_UP and commandWin.canScrollUp():
-			commandWin.scrollUp()
-		elif c == curses.KEY_DOWN and commandWin.canScrollDown():
-			commandWin.scrollDown()
-		elif c == curses.KEY_LEFT and command_scroll_col > 0:
-			command_scroll_col -= 1
-		elif c == curses.KEY_RIGHT and command_scroll_col + width + 1 < max_length:
-			command_scroll_col += 1
+		if c == curses.KEY_UP and focusedWin.canScrollUp():
+			focusedWin.scrollUp()
+		elif c == curses.KEY_DOWN and focusedWin.canScrollDown():
+			focusedWin.scrollDown()
+		elif c == curses.KEY_LEFT and focusedWin.canScrollLeft():
+			focusedWin.scrollLeft()
+		elif c == curses.KEY_RIGHT and focusedWin.canScrollRight():
+			focusedWin.scrollRight()
+		elif c == 336: # Shift+Up
+			focusedWin = commandWin
+		elif c == 337: # Shift+Down
+			focusedWin = detailWin
+		elif c == curses.KEY_PPAGE:
+			if focusedWin.canScrollUp(True):
+				focusedWin.scrollUp(focusedWin.targetHeight, True)
+			elif focusedWin.canScrollUp():
+				focusedWin.scrollUp(focusedWin.targetHeight)
+		elif c == curses.KEY_NPAGE:
+			if focusedWin.canScrollDown(True):
+				focusedWin.scrollDown(focusedWin.targetHeight, True)
+			elif focusedWin.canScrollDown():
+				focusedWin.scrollDown(focusedWin.targetHeight)
+		elif c == curses.KEY_HOME:
+			if focusedWin.canScrollLeft():
+				focusedWin.scrollLeft(focusedWin.width)
+			elif focusedWin.canScrollUp():
+				focusedWin.scrollUp(focusedWin.height)
+		elif c == curses.KEY_END and focusedWin.canScrollDown():
+			focusedWin.scrollDown(focusedWin.height)
 
 if len(sys.argv) != 2:
 	print "Expected a single filename"
