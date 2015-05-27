@@ -96,7 +96,12 @@ def main(win, filename):
 
 		# Keypress
 		c = win.getch()
-		if c in (curses.KEY_UP, ord('k')) and focusedWin.canScrollUp():
+		if c == curses.KEY_RESIZE:
+			win.clear()
+			height, width = win.getmaxyx()
+			commandWin.resize(width - 2, min(len(commits), MAX_COMMITS))
+			detailWin.resize(width - 2, height - commandWin.targetHeight - 5)
+		elif c in (curses.KEY_UP, ord('k')) and focusedWin.canScrollUp():
 			focusedWin.scrollUp()
 		elif c in (curses.KEY_DOWN, ord('j')) and focusedWin.canScrollDown():
 			focusedWin.scrollDown()

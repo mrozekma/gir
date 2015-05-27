@@ -16,10 +16,6 @@ class ScrollWindow:
 		self.width = max(lenFn(row) for row in data)
 		if selectable:
 			self.width += 2
-		if self.height < self.targetHeight:
-			self.targetHeight = self.height
-		if self.width < self.targetWidth:
-			self.targetWidth = self.width
 
 		# I can't figure out why height + 1 is necessary here; the pad is the right height without it, but writing the last line causes an ERR
 		self.win = WindowWrapper(curses.newpad(self.height + 1, self.width))
@@ -27,11 +23,15 @@ class ScrollWindow:
 		self.curCol = 0
 		self.rendered = -1 # All rows through this one have been drawn to self.win
 
+	def resize(self, width, height):
+		self.targetWidth = width
+		self.targetHeight = height
+
 	def getFirstData(self):
 		return self.data[self.curRow]
 
 	def getLastData(self):
-		return self.data[self.curRow + self.targetHeight - 1]
+		return self.data[self.curRow + min(self.targetHeight, self.height) - 1]
 
 	def getSelectedData(self):
 		if self.selection is None:
@@ -39,10 +39,10 @@ class ScrollWindow:
 		return self.data[self.selection]
 
 	def draw(self):
-		first, last = self.curRow, self.curRow + self.targetHeight - 1
+		first, last = self.curRow, self.curRow + min(self.targetHeight, self.height) - 1
 		if self.rendered < last:
 			self.growRender(last)
-		self.win.refresh(self.curRow, self.curCol, self.targetRow, self.targetCol, self.targetRow + self.targetHeight - 1, self.targetCol + self.targetWidth - 1)
+		self.win.refresh(self.curRow, self.curCol, self.targetRow, self.targetCol, self.targetRow + min(self.targetHeight, self.height) - 1, self.targetCol + self.targetWidth - 1)
 
 	def growRender(self, to):
 		"""Draw all undrawn rows through 'to' to 'self.win'"""
@@ -74,8 +74,8 @@ class ScrollWindow:
 		if self.selection is None or literally: # Normal windows
 			if self.curRow > 0:
 				self.curRow = max(0, self.curRow - amt)
-			if self.selection is not None and self.selection > self.curRow + self.targetHeight - 1:
-				self.selection = self.curRow + self.targetHeight - 1
+			if self.selection is not None and self.selection > self.curRow + min(self.targetHeight, self.height) - 1:
+				self.selection = self.curRow + min(self.targetHeight, self.height) - 1
 		elif self.selection > 0: # Selectable windows
 			self.selection = max(0, self.selection - amt)
 			if self.selection < self.curRow:
@@ -83,14 +83,14 @@ class ScrollWindow:
 
 	def canScrollDown(self, literally = False):
 		if self.selection is None or literally:
-			return self.curRow + self.targetHeight < self.height
+			return self.curRow + min(self.targetHeight, self.height) < self.height
 		else:
 			return self.selection < self.height
 
 	def scrollDown(self, amt = 1, literally = False):
 		if self.selection is None or literally: # Normal windows
-			if self.curRow + self.targetHeight < self.height:
-				self.curRow = min(self.height - self.targetHeight, self.curRow + amt)
+			if self.curRow + min(self.targetHeight, self.height) < self.height:
+				self.curRow = min(self.height - min(self.targetHeight, self.height), self.curRow + amt)
 			if self.selection is not None and self.selection < self.curRow:
 				self.selection = self.curRow
 		elif self.selection + 1 < self.height: # Selectable windows
