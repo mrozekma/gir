@@ -26,12 +26,13 @@ def main(win, filename):
 	height, width = win.getmaxyx()
 
 	commands = {
-		'pick': {'color': color.white, 'key': 'p'},
-		'reword': {'color': color.black_yellow, 'key': 'r'},
-		'edit': {'color': color.black_green, 'key': 'e'},
-		'squash': {'color': color.white_blue, 'key': 's'},
-		'fixup': {'color': color.white_magenta, 'key': 'f'},
-		'exec' : {'color': color.white_red, 'key': 'x'},
+		'pick': {'color': color.white, 'key': ord('p')},
+		'reword': {'color': color.black_yellow, 'key': ord('r')},
+		'edit': {'color': color.black_green, 'key': ord('e')},
+		'squash': {'color': color.white_blue, 'key': ord('s')},
+		'fixup': {'color': color.white_magenta, 'key': ord('f')},
+		# 'exec' : {'color': color.white_red, 'key': ord('x')}, # Exec isn't on a commit line, it'll have to be handled separately (also don't have a way to prompt for the command yet)
+		'del' : {'color': color.grey, 'key': curses.KEY_DC},
 	}
 
 	repo = git.Repo(filename)
@@ -161,9 +162,9 @@ def main(win, filename):
 				focusedWin.scrollUp(focusedWin.height)
 		elif c == curses.KEY_END and focusedWin.canScrollDown():
 			focusedWin.scrollDown(focusedWin.height)
-		elif c in (ord(command['key']) for command in commands.values()):
+		elif c in (command['key'] for command in commands.values()):
 			for name, command in commands.iteritems():
-				if c == ord(command['key']):
+				if c == command['key']:
 					command, commit = commandWin.getSelectedData()
 					commandWin.changeSelection((name, commit))
 					break
