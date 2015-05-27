@@ -95,7 +95,7 @@ def main(win, filename):
 			if detailWin is None or detailWin.commit != commit:
 				if detailWin is not None:
 					del detailWin
-				details = repo.git.show(commit.hexsha).split('\n')
+				details = repo.git.show('--no-color', '--format=medium', commit.hexsha).split('\n')
 				if details[0].startswith('commit '): # Already part of the title
 					details.pop(0)
 				if len(details) > MAX_DETAIL_LENGTH:
