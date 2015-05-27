@@ -1,5 +1,5 @@
+from collections import OrderedDict
 import curses
-from curses.textpad import rectangle, Textbox
 import git, gitdb
 import os
 import shutil
@@ -23,15 +23,14 @@ def main(win, filename):
 	curses.curs_set(0) # Hide cursor
 	height, width = win.getmaxyx()
 
-	commands = {
-		'pick': {'color': color.white, 'key': ord('p')},
-		'reword': {'color': color.black_yellow, 'key': ord('r')},
-		'edit': {'color': color.black_green, 'key': ord('e')},
-		'squash': {'color': color.white_blue, 'key': ord('s')},
-		'fixup': {'color': color.white_magenta, 'key': ord('f')},
-		# 'exec' : {'color': color.white_red, 'key': ord('x')}, # Exec isn't on a commit line, it'll have to be handled separately (also don't have a way to prompt for the command yet)
-		'del' : {'color': color.grey, 'key': curses.KEY_DC},
-	}
+	commands = OrderedDict()
+	commands['pick'] = {'color': color.white, 'key': ord('p')}
+	commands['reword'] = {'color': color.black_yellow, 'key': ord('r')}
+	commands['edit'] = {'color': color.black_green, 'key': ord('e')}
+	commands['squash'] = {'color': color.white_blue, 'key': ord('s')}
+	commands['fixup'] = {'color': color.white_magenta, 'key': ord('f')}
+	# commands['exec'] = {'color': color.white_red, 'key': ord('x')}, # Exec isn't on a commit line, it'll have to be handled separately (also don't have a way to prompt for the command yet)
+	commands['del'] = {'color': color.grey, 'key': curses.KEY_DC}
 
 	repo = git.Repo(filename)
 
@@ -78,7 +77,7 @@ def main(win, filename):
 			color.yellow_bold if data.startswith('diff --git') else \
 			color.red_bold if data.startswith('-') else \
 			color.green_bold if data.startswith('+') else \
-			0
+			color.normal()
 		win.addstr(row, 0, data, attr)
 
 	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, min(len(commits), MAX_COMMITS, height - 3), True)
@@ -119,7 +118,10 @@ def main(win, filename):
 		win.addch(commandWin.selection - commandWin.curRow + 1, 1, curses.ACS_RARROW, commands[command]['color'])
 
 		# Keypress
-		c = win.getch()
+		try:
+			c = win.getch()
+		except KeyboardInterrupt:
+			return done(filename, [])
 		if c == curses.KEY_RESIZE:
 			win.clear()
 			height, width = win.getmaxyx()
@@ -172,12 +174,61 @@ def main(win, filename):
 				pass
 		elif c == 10: # Enter
 			return done(filename, commits)
+		elif c == curses.KEY_F1:
+			help(win, commands)
 		elif c in (command['key'] for command in commands.values()):
 			for name, command in commands.iteritems():
 				if c == command['key']:
 					command, commit = commandWin.getSelectedData()
 					commandWin.changeSelection((name, commit))
 					break
+
+def help(win, commands):
+	#TODO Deal with the window being too small
+	#TODO Deal with getch() returning RESIZE (the main loop won't see it)
+	def writeline(text = None, attr = color.normal()):
+		if text:
+			win.addstr(text, attr)
+		y, x = win.getyx()
+		win.move(y + 1, 1)
+	def section(title):
+		writeline()
+		writeline("%s%s" % (title, ' ' * max(0, 40 - len(title))), color.white_underline)
+		writeline()
+	def key(k, name, attr = color.normal()):
+		win.addstr("%-15s  " % k, color.white_bold)
+		writeline(name, attr)
+	win.clear()
+	section('Navigation')
+	key('k, Up', 'Scroll up')
+	key('j, Down', 'Scroll down')
+	key('h, Left', 'Scroll left')
+	key('l, Right', 'Scroll right')
+	key('K, Page Up', 'Scroll up (page)')
+	key('J, Page Down', 'Scroll down (page)')
+	key('H', 'Scroll left (page)')
+	key('L', 'Scroll right (page)')
+	key('Home', 'Scroll top') # Technically left, then top, but whatever
+	key('End', 'Scroll bottom')
+	section('Windows')
+	key('S-Up', 'Focus command pane')
+	key('S-Down', 'Focus commit pane')
+	key('F1', 'Show help pane')
+	section('Commands')
+	for command, info in commands.iteritems():
+		# Hack
+		k = 'Del' if info['key'] == curses.KEY_DC else chr(info['key'])
+		key(k, "%-6s" % command.title(), info['color'])
+	section('Done')
+	key('q, Esc, C-c', 'Cancel rebase')
+	key('Enter', 'Execute rebase')
+
+	writeline()
+	writeline("%-40s" % 'Press any key to close', color.reverse())
+	try:
+		win.getch()
+	except KeyboardInterrupt:
+		pass
 
 def done(filename, commits):
 	fd, tempname = tempfile.mkstemp(text = True)
@@ -197,8 +248,6 @@ if len(sys.argv) != 2:
 ob = OutputBuffer()
 try:
 	curses.wrapper(main, sys.argv[1])
-except KeyboardInterrupt:
-	pass
 finally:
 	print ob.done()
 	title('')
