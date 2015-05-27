@@ -41,6 +41,8 @@ class Color:
 			self.ctr += 1
 			return rtn
 
+	def normal(self, c = 0): return c | curses.A_NORMAL
+	def nm(self, c = 0): return c | curses.A_NORMAL
 	def bold(self, c = 0): return c | curses.A_BOLD
 	def bd(self, c = 0): return c | curses.A_BOLD
 	def reverse(self, c = 0): return c | curses.A_REVERSE
