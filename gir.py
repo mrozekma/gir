@@ -68,23 +68,28 @@ def main(win, filename):
 	def commandLen(data):
 		command, commit = data
 		return 18 + len(commit.summary)
-	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, min(len(commits), MAX_COMMITS), True)
+	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, min(len(commits), MAX_COMMITS, height - 3), True)
 
 	def detailDraw(win, row, data):
 		win.addstr(row, 0, "Line %d" % row)
 	def detailLen(data):
 		return len("Line %d" % data)
-	detailWin = ScrollWindow(list(range(200)), detailDraw, detailLen, commandWin.targetHeight + 3, 1, width - 2, height - commandWin.targetHeight - 5)
+	detailWin = ScrollWindow(list(range(200)), detailDraw, detailLen, min(len(commits), MAX_COMMITS) + 3, 1, width - 2, height - commandWin.targetHeight - 5)
 
 	focusedWin = commandWin
 	win.noutrefresh()
 	while True:
+		if width < 10 or height < 10:
+			raise RuntimeError("Window is too small")
+		dualPane = (height > MAX_COMMITS + 5)
 		win.boundedBorder(0, 0, commandWin.targetHeight + 1, width - 1, 'Commits', color.white if focusedWin == commandWin else color.grey)
-		command, commit = commandWin.getSelectedData()
-		win.boundedBorder(commandWin.targetHeight + 2, 0, height - 2, width - 1, commit.hexsha, color.white if focusedWin == detailWin else color.grey)
+		if dualPane:
+			command, commit = commandWin.getSelectedData()
+			win.boundedBorder(commandWin.targetHeight + 2, 0, height - 2, width - 1, commit.hexsha, color.white if focusedWin == detailWin else color.grey)
 		win.refresh() # Draw now so stuff before the right edge doesn't get overwritten later
 		commandWin.draw()
-		detailWin.draw()
+		if dualPane:
+			detailWin.draw()
 		if commandWin.canScrollUp(literally = True):
 			command, commit = commandWin.getFirstData()
 			win.addch(1, 1, curses.ACS_UARROW, commands[command]['color'])
@@ -99,8 +104,9 @@ def main(win, filename):
 		if c == curses.KEY_RESIZE:
 			win.clear()
 			height, width = win.getmaxyx()
-			commandWin.resize(width - 2, min(len(commits), MAX_COMMITS))
+			commandWin.resize(width - 2, min(len(commits), MAX_COMMITS, height - 3))
 			detailWin.resize(width - 2, height - commandWin.targetHeight - 5)
+			focusedWin = commandWin
 		elif c in (curses.KEY_UP, ord('k')) and focusedWin.canScrollUp():
 			focusedWin.scrollUp()
 		elif c in (curses.KEY_DOWN, ord('j')) and focusedWin.canScrollDown():
@@ -109,9 +115,9 @@ def main(win, filename):
 			focusedWin.scrollLeft()
 		elif c in (curses.KEY_RIGHT, ord('l')) and focusedWin.canScrollRight():
 			focusedWin.scrollRight()
-		elif c == 336: # Shift+Up
+		elif c == 336 and dualPane: # Shift+Up
 			focusedWin = commandWin
-		elif c == 337: # Shift+Down
+		elif c == 337 and dualPane: # Shift+Down
 			focusedWin = detailWin
 		elif c in (curses.KEY_PPAGE, ord('K')):
 			if focusedWin.canScrollUp(True):
