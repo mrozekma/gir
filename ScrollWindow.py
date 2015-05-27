@@ -23,6 +23,9 @@ class ScrollWindow:
 		self.curCol = 0
 		self.rendered = -1 # All rows through this one have been drawn to self.win
 
+	def __del__(self):
+		del self.win
+
 	def resize(self, width, height):
 		self.targetWidth = width
 		self.targetHeight = height

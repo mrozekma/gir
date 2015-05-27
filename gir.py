@@ -14,6 +14,7 @@ from WindowWrapper import WindowWrapper
 # Going to attach the commit *after* 8440467, through f559b2f, after 9ed5d48
 
 MAX_COMMITS = 20
+MAX_DETAIL_LENGTH = 500
 
 def title(str):
 	sys.__stdout__.write("\033]0;%s\007" % str)
@@ -68,24 +69,43 @@ def main(win, filename):
 	def commandLen(data):
 		command, commit = data
 		return 18 + len(commit.summary)
-	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, min(len(commits), MAX_COMMITS, height - 3), True)
-
 	def detailDraw(win, row, data):
-		win.addstr(row, 0, "Line %d" % row)
-	def detailLen(data):
-		return len("Line %d" % data)
-	detailWin = ScrollWindow(list(range(200)), detailDraw, detailLen, min(len(commits), MAX_COMMITS) + 3, 1, width - 2, height - commandWin.targetHeight - 5)
+		# This is formatted to mimic 'tig' output
+		attr = \
+			color.white_red_bold if row > MAX_DETAIL_LENGTH else \
+			color.cyan if data.startswith('Author:') else \
+			color.magenta if data.startswith('Commit:') else \
+			color.yellow if data.startswith('AuthorDate:') or data.startswith('CommitDate:') or data.startswith('Date:') else \
+			color.yellow_bold if data.startswith('diff --git') else \
+			color.red_bold if data.startswith('-') else \
+			color.green_bold if data.startswith('+') else \
+			0
+		win.addstr(row, 0, data, attr)
 
+	commandWin = ScrollWindow(commits, commandDraw, commandLen, 1, 1, width - 2, min(len(commits), MAX_COMMITS, height - 3), True)
+	detailWin = None
 	focusedWin = commandWin
 	win.noutrefresh()
 	while True:
 		if width < 10 or height < 10:
 			raise RuntimeError("Window is too small")
-		dualPane = (height > MAX_COMMITS + 5)
 		win.boundedBorder(0, 0, commandWin.targetHeight + 1, width - 1, 'Commits', color.white if focusedWin == commandWin else color.grey)
+		dualPane = (height > MAX_COMMITS + 5)
+
 		if dualPane:
-			command, commit = commandWin.getSelectedData()
+			_, commit = commandWin.getSelectedData()
+			if detailWin is None or detailWin.commit != commit:
+				if detailWin is not None:
+					del detailWin
+				details = repo.git.show(commit.hexsha).split('\n')
+				if details[0].startswith('commit '): # Already part of the title
+					details.pop(0)
+				if len(details) > MAX_DETAIL_LENGTH:
+					details = details[:MAX_DETAIL_LENGTH] + ['', '(rest of commit truncated)']
+				detailWin = ScrollWindow(details, detailDraw, len, min(len(commits), MAX_COMMITS) + 3, 1, width - 2, height - commandWin.targetHeight - 5)
+				detailWin.commit = commit
 			win.boundedBorder(commandWin.targetHeight + 2, 0, height - 2, width - 1, commit.hexsha, color.white if focusedWin == detailWin else color.grey)
+
 		win.refresh() # Draw now so stuff before the right edge doesn't get overwritten later
 		commandWin.draw()
 		if dualPane:
@@ -105,7 +125,8 @@ def main(win, filename):
 			win.clear()
 			height, width = win.getmaxyx()
 			commandWin.resize(width - 2, min(len(commits), MAX_COMMITS, height - 3))
-			detailWin.resize(width - 2, height - commandWin.targetHeight - 5)
+			if detailWin is not None:
+				detailWin.resize(width - 2, height - commandWin.targetHeight - 5)
 			focusedWin = commandWin
 		elif c in (curses.KEY_UP, ord('k')) and focusedWin.canScrollUp():
 			focusedWin.scrollUp()
