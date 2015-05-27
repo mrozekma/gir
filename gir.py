@@ -229,6 +229,8 @@ def help(win, commands):
 		win.getch()
 	except KeyboardInterrupt:
 		pass
+	finally:
+		win.clear()
 
 def done(filename, commits):
 	fd, tempname = tempfile.mkstemp(text = True)
