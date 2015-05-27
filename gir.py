@@ -1,6 +1,6 @@
 from collections import OrderedDict
 import curses
-import git, gitdb
+import git
 import os
 import shutil
 import sys
@@ -55,7 +55,7 @@ def main(win, filename):
 	# Load all the commit objects at once and update 'commits'
 	# I'm not positive this will get them all, so if necessary load missing objects individually
 	objects = {commit.hexsha[:7]: commit for commit in repo.iter_commits(commits[-1][1], max_count = len(commits) + 1)}
-	commits = [(command, objects[shahash] if shahash in objects else repo.commit(shahash)) for command, shahash in commits]
+	commits = list((command, objects[shahash] if shahash in objects else repo.commit(shahash)) for command, shahash in commits)
 
 	def commandDraw(win, row, data):
 		command, commit = data

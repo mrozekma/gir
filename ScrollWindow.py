@@ -2,6 +2,7 @@ import curses
 
 from WindowWrapper import WindowWrapper
 
+
 class ScrollWindow:
 	def __init__(self, data, drawFn, lenFn, targetRow, targetCol, targetWidth, targetHeight, selectable = False):
 		self.data = data
@@ -42,7 +43,7 @@ class ScrollWindow:
 		return self.data[self.selection]
 
 	def draw(self):
-		first, last = self.curRow, self.curRow + min(self.targetHeight, self.height) - 1
+		last = self.curRow + min(self.targetHeight, self.height) - 1
 		if self.rendered < last:
 			self.growRender(last)
 		self.win.refresh(self.curRow, self.curCol, self.targetRow, self.targetCol, self.targetRow + min(self.targetHeight, self.height) - 1, self.targetCol + self.targetWidth - 1)
