@@ -2,16 +2,14 @@ import curses
 from curses.textpad import rectangle, Textbox
 import git, gitdb
 import os
+import shutil
 import sys
+import tempfile
 
 from Color import color
 from OutputBuffer import OutputBuffer
 from ScrollWindow import ScrollWindow
 from WindowWrapper import WindowWrapper
-
-# .git/rebase-merge/git-rebase-todo
-# Rebase 8440467..f559b2f onto 9ed5d48
-# Going to attach the commit *after* 8440467, through f559b2f, after 9ed5d48
 
 MAX_COMMITS = 20
 MAX_DETAIL_LENGTH = 500
@@ -162,12 +160,35 @@ def main(win, filename):
 				focusedWin.scrollUp(focusedWin.height)
 		elif c == curses.KEY_END and focusedWin.canScrollDown():
 			focusedWin.scrollDown(focusedWin.height)
+		elif c == ord('q'): # Abort
+			return done(filename, [])
+		elif c == 27: # Escape...maybe
+			win.nodelay(True)
+			c = win.getch()
+			win.nodelay(False)
+			if c == curses.ERR: # Actually Escape
+				return done(filename, [])
+			else: # Alt + (whatever 'c' is now)
+				pass
+		elif c == 10: # Enter
+			return done(filename, commits)
 		elif c in (command['key'] for command in commands.values()):
 			for name, command in commands.iteritems():
 				if c == command['key']:
 					command, commit = commandWin.getSelectedData()
 					commandWin.changeSelection((name, commit))
 					break
+
+def done(filename, commits):
+	fd, tempname = tempfile.mkstemp(text = True)
+	try:
+		for command, commit in commits:
+			if command == 'del':
+				continue
+			os.write(fd, "%s %s\n" % (command, commit.hexsha))
+	finally:
+		os.close(fd)
+	shutil.move(tempname, filename)
 
 if len(sys.argv) != 2:
 	print "Expected a single filename"
@@ -176,6 +197,8 @@ if len(sys.argv) != 2:
 ob = OutputBuffer()
 try:
 	curses.wrapper(main, sys.argv[1])
+except KeyboardInterrupt:
+	pass
 finally:
 	print ob.done()
 	title('')
