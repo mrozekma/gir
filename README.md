@@ -14,7 +14,7 @@ You must tell git to use gir as your editor, but only when editing rebase todo l
 
 ## How to use
 
-gir is divided into two sections. The **command pane** shows the rebase todo list and is essentially the same view you would get from your text editor2. The **detail pane** (if your window is large enough) shows a diff of the currently selected commit for context:
+gir is divided into two sections. The **command pane** shows the rebase todo list and is essentially the same view you would get from your text editor. The **detail pane** (if your window is large enough) shows a diff of the currently selected commit for context:
 
 ![](/../doc-imgs/doc-imgs/before.png?raw=true)
 ![](/../doc-imgs/doc-imgs/after.png?raw=true)

@@ -32,7 +32,7 @@ def main(win, filename):
 	# commands['exec'] = {'color': color.white_red, 'key': ord('x')}, # Exec isn't on a commit line, it'll have to be handled separately (also don't have a way to prompt for the command yet)
 	commands['del'] = {'color': color.grey, 'key': curses.KEY_DC}
 
-	repo = git.Repo(filename)
+	repo = git.Repo(os.path.dirname(os.path.dirname(filename)))
 
 	with open(os.path.join(repo.git_dir, 'rebase-merge', 'onto')) as f:
 		onto = f.read().strip()
