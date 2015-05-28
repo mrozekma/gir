@@ -6,10 +6,10 @@ import shutil
 import sys
 import tempfile
 
-from Color import color
-from OutputBuffer import OutputBuffer
-from ScrollWindow import ScrollWindow
-from WindowWrapper import WindowWrapper
+from .Color import color
+from .OutputBuffer import OutputBuffer
+from .ScrollWindow import ScrollWindow
+from .WindowWrapper import WindowWrapper
 
 MAX_COMMITS = 20
 MAX_DETAIL_LENGTH = 500
@@ -243,13 +243,15 @@ def done(filename, commits):
 		os.close(fd)
 	shutil.move(tempname, filename)
 
-if len(sys.argv) != 2:
-	print "Expected a single filename"
-	exit(1)
 
-ob = OutputBuffer()
-try:
-	curses.wrapper(main, sys.argv[1])
-finally:
-	print ob.done()
-	title('')
+def curses_main():
+	if len(sys.argv) != 2:
+		print "Expected a single filename"
+		exit(1)
+
+	ob = OutputBuffer()
+	try:
+		curses.wrapper(main, sys.argv[1])
+	finally:
+		print ob.done()
+		title('')
