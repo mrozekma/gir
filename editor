@@ -1,9 +1,0 @@
-#!/bin/bash
-if [[ "$1" =~ .*/rebase-merge/git-rebase-todo$ ]]; then
-	gir "$1"
-elif [[ -n "$EDITOR" ]]; then
-	"$EDITOR" "$1"
-else
-	echo "No \$EDITOR set"
-	exit 1
-fi

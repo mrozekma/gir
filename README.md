@@ -8,9 +8,15 @@ gir is a curses interface for editing **g**it **i**nteractive **r**ebase todo li
 
 ## Setup
 
-You must tell git to use gir as your editor, but only when editing rebase todo lists. gir comes with a shell script to handle this. If you set [`editor`](/editor) as your git editor, it will send rebase todo lists to gir, and all other files to `$EDITOR`:
+Clone this repository wherever you prefer, then install the gir executable:
 
-    git config --global core.editor /path/to/gir/editor
+    pip install --user -e .
+
+You will need to add ``~/.local/bin`` to your ``$PATH`` if it is not already set in your shell's configuration.
+
+Then, simply configure git to use gir as your interactive rebase editor:
+
+    git config --global sequence.editor gir
 
 ## How to use
 
