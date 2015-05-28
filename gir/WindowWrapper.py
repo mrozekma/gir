@@ -2,6 +2,7 @@ import curses
 
 from Color import color
 
+
 class WindowWrapper:
 	def __init__(self, win):
 		self.win = win
@@ -23,7 +24,6 @@ class WindowWrapper:
 		self.addch(topRow, rightCol, curses.ACS_URCORNER, clr)
 		self.addch(bottomRow, leftCol, curses.ACS_LLCORNER, clr)
 		self.addch(bottomRow, rightCol, curses.ACS_LRCORNER, clr)
-		hr = curses.ACS_HLINE * (rightCol - leftCol - 1)
 		for i in range(leftCol + 1, rightCol):
 			self.addch(topRow, i, curses.ACS_HLINE, clr)
 			self.addch(bottomRow, i, curses.ACS_HLINE, clr)

@@ -1,5 +1,4 @@
 import curses
-import itertools
 
 # black, blue, cyan, green, magenta, red, white, yellow
 

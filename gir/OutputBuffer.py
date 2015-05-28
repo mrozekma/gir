@@ -1,5 +1,6 @@
 import sys
 
+
 class OutputBuffer:
 	def __init__(self, autoStart = True):
 		self.old = None

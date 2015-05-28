@@ -1,15 +1,15 @@
 from collections import OrderedDict
 import curses
-import git, gitdb
+import git
 import os
 import shutil
 import sys
 import tempfile
 
-from Color import color
-from OutputBuffer import OutputBuffer
-from ScrollWindow import ScrollWindow
-from WindowWrapper import WindowWrapper
+from .Color import color
+from .OutputBuffer import OutputBuffer
+from .ScrollWindow import ScrollWindow
+from .WindowWrapper import WindowWrapper
 
 MAX_COMMITS = 20
 MAX_DETAIL_LENGTH = 500
@@ -55,7 +55,7 @@ def main(win, filename):
 	# Load all the commit objects at once and update 'commits'
 	# I'm not positive this will get them all, so if necessary load missing objects individually
 	objects = {commit.hexsha[:7]: commit for commit in repo.iter_commits(commits[-1][1], max_count = len(commits) + 1)}
-	commits = [(command, objects[shahash] if shahash in objects else repo.commit(shahash)) for command, shahash in commits]
+	commits = list((command, objects[shahash] if shahash in objects else repo.commit(shahash)) for command, shahash in commits)
 
 	def commandDraw(win, row, data):
 		command, commit = data
@@ -243,13 +243,15 @@ def done(filename, commits):
 		os.close(fd)
 	shutil.move(tempname, filename)
 
-if len(sys.argv) != 2:
-	print "Expected a single filename"
-	exit(1)
 
-ob = OutputBuffer()
-try:
-	curses.wrapper(main, sys.argv[1])
-finally:
-	print ob.done()
-	title('')
+def curses_main():
+	if len(sys.argv) != 2:
+		print "Expected a single filename"
+		exit(1)
+
+	ob = OutputBuffer()
+	try:
+		curses.wrapper(main, sys.argv[1])
+	finally:
+		print ob.done()
+		title('')
